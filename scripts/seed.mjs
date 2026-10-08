@@ -79,7 +79,7 @@ const { data: rows, error: e2 } = await sb.from("issues").select("id,ward,create
 if (e2) { console.error(e2.message); process.exit(1); }
 let resolved = 0;
 for (const r of rows) {
-  if (rnd() < (WARD_RATE[r.ward] ?? 0.4) * 0.8 + 0.08) {
+  if (rnd() < (WARD_RATE[r.ward] ?? 0.4) * 0.6) {
     const created = new Date(r.created_at).getTime();
     const ward = parseInt(String(r.ward).replace(/\D/g, ""), 10) || 3;
     const hrs = int(4, 20 + ward * 16); // slower wards take longer
