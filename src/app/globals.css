@@ -138,3 +138,11 @@ table.wards { width: 100%; border-collapse: collapse; background: var(--surface)
 .bar > i { display: block; height: 100%; background: var(--primary); }
 .wide { max-width: 960px; margin: 0 auto; padding: calc(var(--s) * 2); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Manual location picker */
+.linkbtn { background: none; border: 0; color: var(--primary); text-decoration: underline; font-weight: 500; min-height: 48px; }
+.searchrow { display: flex; gap: var(--s); margin: var(--s) 0; }
+.searchrow input { flex: 1; min-width: 0; min-height: 48px; font: inherit; padding: 0 12px; border: 1px solid #94a3b8; border-radius: 10px; }
+.pickmap { height: 280px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); margin: var(--s) 0; }
+.howto { margin-top: var(--s); font-size: .9rem; color: var(--muted); }
+.howto summary { cursor: pointer; min-height: 32px; }

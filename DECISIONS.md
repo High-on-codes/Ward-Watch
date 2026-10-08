@@ -9,3 +9,4 @@
 - The sample fixtures in `scripts/fixtures/` are tiny valid JPEGs meant for mock mode; use real photos to exercise the live AI.
 - Not verified against a live Supabase project in this build environment (no credentials): `npm run build` passes, but `schema.sql`, the RPC, seed and smoke test still need a run against a real project.
 - Seed uses 1-6 reports per hotspot (as the spec's hotspot rule says) instead of topping up to ~85 total, which made nearly every issue critical.
+- Added manual location fallback (map picker + Nominatim place search) for users who cannot enable GPS; this extends spec 11.3 error handling and never guesses a location silently.
