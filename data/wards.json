@@ -1,0 +1,8 @@
+[
+  { "name": "Ward 1", "dLat": 0.012, "dLng": 0.0 },
+  { "name": "Ward 2", "dLat": 0.006, "dLng": 0.012 },
+  { "name": "Ward 3", "dLat": -0.006, "dLng": 0.012 },
+  { "name": "Ward 4", "dLat": -0.012, "dLng": 0.0 },
+  { "name": "Ward 5", "dLat": -0.006, "dLng": -0.012 },
+  { "name": "Ward 6", "dLat": 0.006, "dLng": -0.012 }
+]
