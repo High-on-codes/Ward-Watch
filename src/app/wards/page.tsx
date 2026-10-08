@@ -35,34 +35,55 @@ export default function WardsPage() {
     return out.sort((a, b) => b.rate - a.rate || (a.avgHrs ?? Infinity) - (b.avgHrs ?? Infinity));
   }, [issues]);
 
+  const podium = rows.filter((r) => r.total > 0).slice(0, 3);
+
   return (
-    <div className="wide">
-      <h1>Ward accountability</h1>
-      <p className="helper">Wards are ranked by the share of reported issues they have resolved, then by how quickly they fix them.</p>
-      {error && <div className="alert alert-error" role="alert">Could not load data: {error}</div>}
-      {!issues && !error && <div className="empty"><span className="spinner" aria-hidden /> Loading…</div>}
-      {issues && (
-        <div className="table-wrap">
-          <table className="wards">
-            <thead>
-              <tr><th>#</th><th>Ward</th><th>Open</th><th>Resolved</th><th>Resolution rate</th><th>Avg time to resolve</th><th>Oldest open</th></tr>
-            </thead>
-            <tbody>
-              {rows.map((r, idx) => (
-                <tr key={r.ward}>
-                  <td>{idx + 1}</td>
-                  <td><strong>{r.ward}</strong></td>
-                  <td>{r.open}</td>
-                  <td>{r.resolved}/{r.total}</td>
-                  <td><span className="bar" aria-hidden><i style={{ width: `${Math.round(r.rate * 100)}%` }} /></span>{Math.round(r.rate * 100)}%</td>
-                  <td>{r.avgHrs === null ? "-" : `${r.avgHrs.toFixed(1)} h`}</td>
-                  <td>{r.oldest === null ? "-" : `${Math.floor(r.oldest)} d`}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+    <div className="wrap">
+      <header className="page-head">
+        <span className="eyebrow"><span className="live-dot ok" aria-hidden /> Public accountability</span>
+        <h1>Ward <em>leaderboard</em></h1>
+        <p>Wards are ranked by the share of reported issues they have resolved, then by how quickly they fix them.</p>
+      </header>
+      <div style={{ paddingBottom: 96 }}>
+        {error && <div className="alert alert-error" role="alert">Could not load data: {error}</div>}
+        {!issues && !error && <div className="empty"><span className="spinner" aria-hidden /> Loading…</div>}
+        {issues && podium.length > 0 && (
+          <div className="podium">
+            {podium.map((r, idx) => (
+              <div key={r.ward} className={"card" + (idx === 0 ? " first" : "")}>
+                <span className="rank">#{idx + 1} · {r.resolved} of {r.total} resolved</span>
+                <h3>{r.ward}</h3>
+                <div className="big">{Math.round(r.rate * 100)}<small style={{ fontSize: "1.1rem", color: "var(--muted)" }}>%</small></div>
+                <p className="meta" style={{ margin: "8px 0 0" }}>
+                  {r.avgHrs === null ? "No fixes timed yet" : `Avg ${r.avgHrs.toFixed(1)} h to resolve`} · {r.open} open
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+        {issues && (
+          <div className="table-wrap">
+            <table className="wards">
+              <thead>
+                <tr><th>#</th><th>Ward</th><th>Open</th><th>Resolved</th><th>Resolution rate</th><th>Avg time to resolve</th><th>Oldest open</th></tr>
+              </thead>
+              <tbody>
+                {rows.map((r, idx) => (
+                  <tr key={r.ward}>
+                    <td className="num">{idx + 1}</td>
+                    <td><strong>{r.ward}</strong></td>
+                    <td className="num">{r.open}</td>
+                    <td className="num">{r.resolved}/{r.total}</td>
+                    <td><span className="bar" aria-hidden><i style={{ width: `${Math.round(r.rate * 100)}%`, animationDelay: `${idx * 80}ms` }} /></span><span className="mono">{Math.round(r.rate * 100)}%</span></td>
+                    <td className="num">{r.avgHrs === null ? "-" : `${r.avgHrs.toFixed(1)} h`}</td>
+                    <td className={"num" + (r.oldest !== null && r.oldest >= 7 ? " old" : "")}>{r.oldest === null ? "-" : `${Math.floor(r.oldest)} d`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

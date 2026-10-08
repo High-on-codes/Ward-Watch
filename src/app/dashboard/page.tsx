@@ -131,14 +131,23 @@ export default function Dashboard() {
         ref={fileRef} type="file" accept="image/*" capture="environment" hidden
         onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) onAfterPhoto(f); }}
       />
+      <div className="dash-top">
+        <div>
+          <span className="eyebrow">Municipal view</span>
+          <h1>Live dashboard</h1>
+        </div>
+        <span className="livebar" aria-live="polite">
+          <span className={"live-dot" + (error ? "" : " ok")} aria-hidden />
+          {secs === null ? "Loading…" : `Updated ${secs}s ago`}
+        </span>
+      </div>
       <div className="stats">
         <div className="stat"><b>{stats.open}</b><span>Open issues</span></div>
-        <div className="stat"><b>{stats.critical}</b><span>Critical</span></div>
+        <div className={"stat" + (stats.critical > 0 ? " attn" : "")}><b>{stats.critical}</b><span>Critical</span></div>
         <div className="stat"><b>{stats.day}</b><span>Resolved in last 24 h</span></div>
         <div className="stat"><b>{stats.avg === null ? "-" : stats.avg.toFixed(1)}</b><span>Avg hours to resolve</span></div>
       </div>
       <div className="dash-toolbar">
-        <span aria-live="polite">{secs === null ? "Loading…" : `Updated ${secs}s ago`}</span>
         {error && <span style={{ color: "var(--critical)" }}>Update failed: {error}</span>}
         <label>
           <input type="checkbox" checked={showResolved} onChange={(e) => setShowResolved(e.target.checked)} /> Show resolved
@@ -150,6 +159,7 @@ export default function Dashboard() {
             <option value="assigned">Assigned</option><option value="resolved">Resolved</option>
           </select>
         </label>
+        <span className="sep" aria-hidden />
         <button className="chip" aria-pressed={catFilter === "all"} onClick={() => setCatFilter("all")}>All</button>
         {CATEGORIES.map((c) => (
           <button key={c} className="chip" aria-pressed={catFilter === c} onClick={() => setCatFilter(c)}>
@@ -174,7 +184,7 @@ export default function Dashboard() {
           {issues && issues.length > 0 && visible.length === 0 && <div className="empty">No issues match these filters.</div>}
           {visible.map((i) => (
             <article
-              key={i.id} id={`issue-${i.id}`} className={"card issue" + (i.id === selected ? " active" : "")}
+              key={i.id} id={`issue-${i.id}`} className={"card issue b-" + i.band + (i.status === "resolved" ? " is-resolved" : "") + (i.id === selected ? " active" : "")}
               onClick={() => select(i.id, false)}
             >
               <div className="issue-head">
@@ -182,7 +192,7 @@ export default function Dashboard() {
                 {i.status !== "resolved" && <span className={`badge badge-${i.band}`}>{i.band}</span>}
                 <span className={`pill pill-${i.status}`}>{i.status}</span>
                 {i.status === "resolved" && <span className="badge badge-verified">Verified</span>}
-                <span className="prio">Priority {i.priority}</span>
+                <span className="prio">Priority <b>{i.priority}</b></span>
               </div>
               <div className="meta">
                 {i.report_count} report{i.report_count === 1 ? "" : "s"} - {i.status === "resolved" ? "was open" : "open"}{" "}

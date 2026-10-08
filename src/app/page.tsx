@@ -5,6 +5,9 @@ import { useRef, useState } from "react";
 import { CATEGORY_LABEL, type Category } from "@/lib/issues";
 import { compressImage } from "@/lib/client";
 import { MAP_CENTER } from "@/lib/wards";
+import Link from "next/link";
+import Icon from "@/components/Icon";
+import HeroScene from "@/components/HeroScene";
 import type { LatLng } from "@/components/LocationPicker";
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), {
@@ -137,113 +140,292 @@ export default function ReportPage() {
     }
   }
 
+
+  const STEPS = ["Getting your location…", "Preparing photo…", "AI is checking the photo…"];
+  const STEP_LABEL = ["Finding where you are", "Preparing the photo and removing its metadata", "AI is checking the photo"];
+
   return (
-    <div className="container hero">
-      <h1>Ward Watch</h1>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        hidden
-        data-testid="camera"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          e.target.value = "";
-          if (f) submit(f);
-        }}
-      />
+    <>
+      <section className="hero">
+        <svg className="hero-contours" viewBox="0 0 900 640" aria-hidden="true">
+          <g fill="none" stroke="currentColor" strokeWidth="1">
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((k) => (
+              <path key={k} d={`M${-60 + k * 6} ${120 + k * 52} C ${180 + k * 10} ${40 + k * 58}, ${360 - k * 8} ${260 + k * 40}, ${560 + k * 4} ${150 + k * 50} S ${880 - k * 12} ${90 + k * 56}, ${1000} ${170 + k * 48}`} />
+            ))}
+          </g>
+        </svg>
+        <div className="wrap hero-grid">
+          <div className="report-panel">
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              data-testid="camera"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) submit(f);
+              }}
+            />
 
-      {state.kind === "idle" && (
-        <>
-          <button className="btn-primary btn-big" onClick={() => start(false)}>Report a problem</button>
-          <p className="helper">Take one photo. We handle the rest.</p>
-          <button className="linkbtn" onClick={() => start(true)}>Can&apos;t turn on location? Choose it on the map</button>
-          <p className="privacy">Only the photo and location are stored. No account needed.</p>
-        </>
-      )}
+            {state.kind === "idle" && (
+              <div className="flow">
+                <span className="eyebrow"><span className="live-dot" aria-hidden /> Your ward, watched with care</span>
+                <h1>Report a civic problem with <em>one photo.</em></h1>
+                <p className="lede">
+                  AI classifies and rates it, nearby duplicates merge automatically, and the municipality sees a live,
+                  priority-ranked map. A ticket closes only when an after-photo proves the fix.
+                </p>
+                <div className="cta-ring">
+                  <button className="btn-primary btn-big" onClick={() => start(false)}>
+                    <Icon name="camera" /> Report a problem
+                  </button>
+                </div>
+                <p className="helper">Take one photo. We handle the rest.</p>
+                <button className="linkbtn" onClick={() => start(true)}>Can&apos;t turn on location? Choose it on the map</button>
+                <p className="privacy"><Icon name="lock" size={16} /> Only the photo and location are stored. No account needed.</p>
+              </div>
+            )}
 
-      {state.kind === "working" && (
-        <div className="card" role="status" aria-live="polite">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="preview" src={state.preview} alt="Your photo" />
-          <div className="progress"><span className="spinner" aria-hidden /> {state.step}</div>
-        </div>
-      )}
+            {state.kind === "working" && (
+              <div className="card flow" role="status" aria-live="polite">
+                <div className="preview-wrap scanning">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="preview" src={state.preview} alt="Your photo" />
+                </div>
+                <ol className="steps-mini">
+                  {STEP_LABEL.map((label, n) => {
+                    const at = Math.max(0, STEPS.indexOf(state.step));
+                    return (
+                      <li key={label} className={n < at ? "done" : n === at ? "now" : ""}>
+                        <i aria-hidden>{n < at && <Icon name="check" size={14} />}</i>
+                        {label}
+                      </li>
+                    );
+                  })}
+                </ol>
+                <span className="sr-only">{state.step}</span>
+              </div>
+            )}
 
-      {state.kind === "locate" && (
-        <div className="card" style={{ textAlign: "left" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="preview" src={state.preview} alt="Your photo" style={{ maxHeight: 120 }} />
-          <p role="status"><strong>{state.why}</strong></p>
-          <form className="searchrow" onSubmit={(e) => { e.preventDefault(); search(); }}>
-            <label className="sr-only" htmlFor="loc-q">Search for a place</label>
-            <input id="loc-q" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search a street, landmark or area" />
-            <button type="submit" disabled={searching}>{searching ? "…" : "Search"}</button>
-          </form>
-          {searchMsg && <p className="meta" role="status">{searchMsg}</p>}
-          <div className="pickmap" aria-label="Map: tap to place the pin">
-            <LocationPicker center={picked || MAP_CENTER} value={picked} onPick={setPicked} />
-          </div>
-          <p className="meta">{picked ? "Pin placed. Tap the map to move it." : "Tap the map to drop a pin on the problem."}</p>
-          <div className="btn-row" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button className="btn-primary" disabled={!picked} onClick={() => lastFile.current && picked && submit(lastFile.current, picked)}>
-              Use this location
-            </button>
-            <button onClick={tryGpsAgain}>Try GPS again</button>
-          </div>
-          <details className="howto">
-            <summary>How do I turn on location?</summary>
-            <p><strong>iPhone:</strong> Settings → Privacy &amp; Security → Location Services → turn on, then allow it for your browser (Safari/Chrome → While Using).</p>
-            <p><strong>Android:</strong> pull down the quick settings and turn on Location, then tap the lock icon in the address bar → Permissions → Location → Allow.</p>
-          </details>
-        </div>
-      )}
+            {state.kind === "locate" && (
+              <div className="card flow">
+                <div className="preview-wrap">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="preview" src={state.preview} alt="Your photo" style={{ maxHeight: 120 }} />
+                </div>
+                <p role="status" style={{ margin: "0 0 4px" }}><strong>{state.why}</strong></p>
+                <form className="searchrow" onSubmit={(e) => { e.preventDefault(); search(); }}>
+                  <label className="sr-only" htmlFor="loc-q">Search for a place</label>
+                  <input id="loc-q" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search a street, landmark or area" />
+                  <button type="submit" disabled={searching}>{searching ? <span className="spinner" aria-label="Searching" /> : "Search"}</button>
+                </form>
+                {searchMsg && <p className="meta" role="status">{searchMsg}</p>}
+                <div className="pickmap" aria-label="Map: tap to place the pin">
+                  <LocationPicker center={picked || MAP_CENTER} value={picked} onPick={setPicked} />
+                </div>
+                <p className="meta">{picked ? "Pin placed. Tap the map to move it." : "Tap the map to drop a pin on the problem."}</p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                  <button className="btn-primary" disabled={!picked} onClick={() => lastFile.current && picked && submit(lastFile.current, picked)}>
+                    <Icon name="pin" size={18} /> Use this location
+                  </button>
+                  <button onClick={tryGpsAgain}>Try GPS again</button>
+                </div>
+                <details className="howto">
+                  <summary>How do I turn on location?</summary>
+                  <p><strong>iPhone:</strong> Settings → Privacy &amp; Security → Location Services → turn on, then allow it for your browser (Safari/Chrome → While Using).</p>
+                  <p><strong>Android:</strong> pull down the quick settings and turn on Location, then tap the lock icon in the address bar → Permissions → Location → Allow.</p>
+                </details>
+              </div>
+            )}
 
-      {state.kind === "done" && (
-        <div className="card result" style={{ textAlign: "left" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="preview" src={state.preview} alt="Your reported photo" />
-          <h2>
-            {CATEGORY_LABEL[state.result.category]}{" "}
-            {state.result.aiSource === "mock" && <span className="badge badge-demo">Demo AI</span>}
-          </h2>
-          <p>
-            Severity{" "}
-            <span className="dots" role="img" aria-label={`Severity ${state.result.severity} of 5`}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <span key={n} className={"dot" + (n <= state.result.severity ? " on" : "")} />
-              ))}
-            </span>{" "}
-            {state.result.severity}/5
-          </p>
-          <p>{state.result.description}</p>
-          <p className="meta">{state.result.ward}</p>
-          <p>
-            <strong>
-              {state.result.merged
-                ? `Merged with an existing report - now ${state.result.reportCount} reports`
-                : "New issue created"}
-            </strong>
-          </p>
-          <p className="meta">Reported in {state.secs.toFixed(1)} s</p>
-          <button className="btn-primary btn-big" onClick={() => start(false)}>Report another</button>
-        </div>
-      )}
+            {state.kind === "done" && (
+              <div className="card flow result">
+                <div className="preview-wrap">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className="preview" src={state.preview} alt="Your reported photo" />
+                </div>
+                <span className="eyebrow"><span className="live-dot ok" aria-hidden /> Report received</span>
+                <h2>
+                  {CATEGORY_LABEL[state.result.category]}{" "}
+                  {state.result.aiSource === "mock" && <span className="badge badge-demo">Demo AI</span>}
+                </h2>
+                <p>
+                  Severity{" "}
+                  <span className="dots" role="img" aria-label={`Severity ${state.result.severity} of 5`}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <span key={n} className={"dot" + (n <= state.result.severity ? " on" : "")} />
+                    ))}
+                  </span>{" "}
+                  {state.result.severity}/5
+                </p>
+                <p>{state.result.description}</p>
+                <div className="result-banner">
+                  <Icon name={state.result.merged ? "merge" : "check"} />
+                  {state.result.merged
+                    ? `Merged with an existing report - now ${state.result.reportCount} reports`
+                    : "New issue created"}
+                </div>
+                <div className="result-meta">
+                  <span><Icon name="pin" size={14} /> {state.result.ward}</span>
+                  <span className="mono">Reported in {state.secs.toFixed(1)} s</span>
+                </div>
+                <button className="btn-primary btn-big" onClick={() => start(false)}><Icon name="camera" /> Report another</button>
+                <p style={{ textAlign: "center", marginTop: 12 }}><Link href="/dashboard">See it on the live map</Link></p>
+              </div>
+            )}
 
-      {state.kind === "error" && (
-        <div className="alert alert-error" role="alert" style={{ textAlign: "left" }}>
-          <strong>{state.message}</strong>
-          {state.hint && <p>{state.hint}</p>}
-          <div className="btn-row">
-            {state.retry ? (
-              <button className="btn-primary" onClick={retry}>Try again</button>
-            ) : (
-              <button className="btn-primary" onClick={() => start(false)}>Take another photo</button>
+            {state.kind === "error" && (
+              <div className="alert alert-error flow" role="alert">
+                <strong>{state.message}</strong>
+                {state.hint && <p>{state.hint}</p>}
+                <div className="btn-row">
+                  {state.retry ? (
+                    <button className="btn-primary" onClick={retry}>Try again</button>
+                  ) : (
+                    <button className="btn-primary" onClick={() => start(false)}>Take another photo</button>
+                  )}
+                </div>
+              </div>
             )}
           </div>
+
+          <HeroScene />
         </div>
-      )}
-    </div>
+      </section>
+
+      <section className="section section-tint" aria-labelledby="journey-h">
+        <div className="wrap">
+          <div className="section-head">
+            <span className="eyebrow" data-reveal>From photo to fixed</span>
+            <h2 id="journey-h" data-reveal style={{ ["--d" as string]: 1 }}>Four quiet steps. <em>Nothing</em> slips through.</h2>
+            <p data-reveal style={{ ["--d" as string]: 2 }}>No forms, no phone trees. Every report is placed, rated, grouped with its neighbours and followed until the fix is proven.</p>
+          </div>
+          <div className="journey" data-trace-wrap>
+            <svg className="journey-line" viewBox="0 0 40 1000" preserveAspectRatio="none" aria-hidden="true">
+              <path className="base" d="M20 0 V1000" vectorEffect="non-scaling-stroke" />
+              <path className="trace" data-trace d="M20 0 V1000" vectorEffect="non-scaling-stroke" />
+            </svg>
+            <article className="jstep" data-step>
+              <span className="num">01 · SNAP</span>
+              <h3><Icon name="camera" size={24} /> One photo, located for you</h3>
+              <p>Open the camera and shoot. GPS is captured while you frame the shot, so there is nothing to type. If location is off, drop a pin or search for a landmark instead.</p>
+              <span className="fact"><Icon name="lock" size={14} /> EXIF removed on your phone</span>
+            </article>
+            <article className="jstep" data-step>
+              <span className="num">02 · TRIAGE</span>
+              <h3><Icon name="spark" size={24} /> AI names it and rates it</h3>
+              <p>A vision model classifies the problem and rates severity from 1 (cosmetic) to 5 (immediate hazard), with one factual sentence. It is told to ignore people and number plates.</p>
+              <span className="fact">category · severity 1–5 · description</span>
+            </article>
+            <article className="jstep" data-step>
+              <span className="num">03 · MERGE</span>
+              <h3><Icon name="merge" size={24} /> Neighbours become one issue</h3>
+              <p>A report of the same kind within 30 m of an open issue joins it instead of cluttering the queue. Each extra report raises the count and keeps the highest severity.</p>
+              <span className="fact">PostGIS ST_DWithin · 30 m</span>
+            </article>
+            <article className="jstep" data-step>
+              <span className="num">04 · VERIFY</span>
+              <h3><Icon name="shield" size={24} /> Closed only when it&apos;s really fixed</h3>
+              <p>The worker uploads an after-photo. AI compares it with the original, and the ticket closes only if it is resolved with at least 60% confidence. Otherwise the reason is kept and the issue stays open.</p>
+              <span className="fact"><Icon name="check" size={14} /> confidence ≥ 0.6</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="section" aria-labelledby="duo-h">
+        <div className="wrap">
+          <div className="section-head">
+            <span className="eyebrow" data-reveal>Two sides of the same street</span>
+            <h2 id="duo-h" data-reveal style={{ ["--d" as string]: 1 }}>Calm for citizens. <em>Clear</em> for officers.</h2>
+          </div>
+          <div className="duo">
+            <div className="card" data-reveal>
+              <span className="icon-chip"><Icon name="people" /></span>
+              <h3>For people reporting</h3>
+              <ul className="ticks">
+                <li><Icon name="check" size={18} /> One tap to the camera, automatic GPS, no forms.</li>
+                <li><Icon name="check" size={18} /> No account, no sign-up. Only the photo and location are stored.</li>
+                <li><Icon name="check" size={18} /> Instant feedback: what it is, how serious, and whether others reported it too.</li>
+                <li><Icon name="check" size={18} /> Installable on your home screen like an app.</li>
+              </ul>
+            </div>
+            <div className="card" data-reveal style={{ ["--d" as string]: 1 }}>
+              <span className="icon-chip"><Icon name="building" /></span>
+              <h3>For the municipality</h3>
+              <ul className="ticks">
+                <li><Icon name="check" size={18} /> A live map, refreshed every 15 seconds and ranked by priority.</li>
+                <li><Icon name="check" size={18} /> Duplicates merged automatically, so the queue stays honest.</li>
+                <li><Icon name="check" size={18} /> Assign and resolve from the field with a photo.</li>
+                <li><Icon name="check" size={18} /> A public ward leaderboard for resolution rate and speed.</li>
+              </ul>
+            </div>
+          </div>
+          <div className="cats" data-reveal aria-label="Categories Ward Watch recognises">
+            {Object.values(CATEGORY_LABEL).map((c) => <span key={c} className="cat"><i aria-hidden /> {c}</span>)}
+          </div>
+        </div>
+      </section>
+
+      <section className="section section-tint" aria-labelledby="prio-h">
+        <div className="wrap formula">
+          <div>
+            <span className="eyebrow" data-reveal>Attention, in order</span>
+            <h2 id="prio-h" data-reveal style={{ ["--d" as string]: 1, fontSize: "clamp(2rem, 4.4vw, 3.1rem)", margin: "14px 0" }}>
+              The most urgent problem is <em>always on top.</em>
+            </h2>
+            <p data-reveal style={{ ["--d" as string]: 2, color: "var(--ink-2)" }}>
+              Priority grows with severity, with every extra report, and with time left unfixed (capped at two weeks), so old problems can&apos;t quietly sink.
+            </p>
+            <p data-reveal style={{ ["--d" as string]: 3 }}><Link href="/how-it-works#priority">Try the priority calculator</Link></p>
+          </div>
+          <div className="viz" data-reveal style={{ ["--d" as string]: 1 }}>
+            <div className="equation" aria-label="priority equals severity times reports times age factor">
+              <span className="term">priority<small>score</small></span><span className="op">=</span>
+              <span className="term">severity<small>1–5</small></span><span className="op">×</span>
+              <span className="term">reports<small>count</small></span><span className="op">×</span>
+              <span className="term">age<small>1 to 3×</small></span>
+            </div>
+            <div className="bands">
+              <div className="b-c"><b>Critical</b><span>≥ 20</span></div>
+              <div className="b-h"><b>High</b><span>≥ 10</span></div>
+              <div className="b-m"><b>Medium</b><span>≥ 5</span></div>
+              <div className="b-l"><b>Low</b><span>&lt; 5</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section" aria-label="Ward Watch in numbers">
+        <div className="wrap">
+          <div className="numbers" data-reveal>
+            <div><b><span data-count="1">1</span></b><span>photo is all a report needs</span></div>
+            <div><b><span data-count="30">30</span><small>m</small></b><span>radius for merging duplicates</span></div>
+            <div><b><span data-count="60">60</span><small>%</small></b><span>minimum AI confidence to close</span></div>
+            <div><b><span data-count="15">15</span><small>s</small></b><span>between live dashboard refreshes</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="closer" aria-labelledby="closer-h">
+        <svg className="rings" viewBox="0 0 900 900" aria-hidden="true">
+          <circle cx="450" cy="450" r="140" /><circle cx="450" cy="450" r="230" /><circle cx="450" cy="450" r="330" /><circle cx="450" cy="450" r="440" />
+        </svg>
+        <div className="wrap">
+          <span className="eyebrow" data-reveal>See something?</span>
+          <h2 id="closer-h" data-reveal style={{ ["--d" as string]: 1 }}>Your street is <em>worth one photo.</em></h2>
+          <p data-reveal style={{ ["--d" as string]: 2 }}>It takes a few seconds. Ward Watch keeps an eye on it until it&apos;s fixed.</p>
+          <div className="row" data-reveal style={{ ["--d" as string]: 3 }}>
+            <button className="btn-primary" onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); start(false); }}>
+              <Icon name="camera" size={18} /> Report a problem
+            </button>
+            <Link className="btn" href="/dashboard"><Icon name="map" size={18} /> Open the live map</Link>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
