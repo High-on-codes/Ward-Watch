@@ -46,7 +46,7 @@ for (let i = 0; i < 12; i++) {
   const w = wards[i % wards.length];
   spots.push({
     lat: w.lat + (rnd() - 0.5) * 0.008, lng: w.lng + (rnd() - 0.5) * 0.008,
-    category: CATS[i % 4], sev: int(2, 5), n: i < 11 ? int(2, 6) : 5,
+    category: CATS[i % 4], sev: int(1, 5), n: int(1, 6),
   });
 }
 // 4 isolated single reports
@@ -54,10 +54,6 @@ for (let i = 0; i < 4; i++) {
   const w = pick(wards);
   spots.push({ lat: w.lat + (rnd() - 0.5) * 0.01, lng: w.lng + (rnd() - 0.5) * 0.01, category: pick(CATS), sev: int(1, 3), n: 1 });
 }
-// top up toward ~85 reports by adding reports to hotspots
-let total = spots.reduce((s, x) => s + x.n, 0);
-for (let guard = 0; total < 85 && guard < 500; guard++) { const s = spots[int(0, 11)]; if (s.n < 9) { s.n++; total++; } }
-
 const touched = new Set();
 let inserted = 0;
 for (const s of spots) {
